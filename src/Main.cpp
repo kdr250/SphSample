@@ -1,5 +1,16 @@
 #include <SDL2/SDL.h>
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+    #include <emscripten/html5.h>
+#endif
+
+SDL_Window* window     = nullptr;
+SDL_Renderer* renderer = nullptr;
+bool isRunning         = true;
+
+void Shutdown();
+
 int main()
 {
     int sdlResult = SDL_Init(SDL_INIT_VIDEO);
@@ -9,28 +20,36 @@ int main()
         return 1;
     }
 
-    auto window = SDL_CreateWindow("SphSample",
-                                   SDL_WINDOWPOS_UNDEFINED,
-                                   SDL_WINDOWPOS_UNDEFINED,
-                                   1024,
-                                   768,
-                                   0);
+    window = SDL_CreateWindow("SphSample",
+                              SDL_WINDOWPOS_UNDEFINED,
+                              SDL_WINDOWPOS_UNDEFINED,
+                              1024,
+                              768,
+                              0);
     if (!window)
     {
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return 1;
     }
 
-    auto renderer = SDL_CreateRenderer(window, -1, 0);
+    renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer)
     {
         SDL_Log("Failed to create renderer: %s", SDL_GetError());
         return 1;
     }
 
-    bool isRunning = true;
-    while (isRunning)
+    auto mainLoop = []()
     {
+#ifdef __EMSCRIPTEN__
+        if (!isRunning)
+        {
+            emscripten_cancel_main_loop();
+            Shutdown();
+            return;
+        }
+#endif
+
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -54,8 +73,23 @@ int main()
         SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
         SDL_RenderClear(renderer);
         SDL_RenderPresent(renderer);
-    }
+    };
 
-    SDL_DestroyWindow(window);
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(mainLoop, 0, 1);
+#else
+    while (isRunning)
+    {
+        mainLoop();
+    }
+    Shutdown();
+#endif
+
     return 0;
+}
+
+void Shutdown()
+{
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
 }
