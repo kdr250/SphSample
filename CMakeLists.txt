@@ -22,6 +22,7 @@ if (EMSCRIPTEN)
     set(VCPKG_TARGET_TRIPLET "wasm32-emscripten")
 else()
     find_package(SDL2 CONFIG REQUIRED)
+    find_package(sdl2-gfx CONFIG REQUIRED)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -40,7 +41,7 @@ add_executable(
 
 if (EMSCRIPTEN)
 
-    set(USE_FLAGS "-s USE_SDL=2 --preload-file resources/")
+    set(USE_FLAGS "-s USE_SDL=2 -s USE_SDL_GFX=2 --preload-file resources/")
     set(CMAKE_CXX_FLAGS ${USE_FLAGS})
 
     set_target_properties(main PROPERTIES SUFFIX ".html")
@@ -53,6 +54,7 @@ else()
         main PRIVATE
         $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
         $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+        SDL2::SDL2_gfx
     )
 
     add_custom_command(

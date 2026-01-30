@@ -4,6 +4,10 @@
         {
             "name": "sdl2",
             "platform": "!wasm32"
+        },
+        {
+            "name": "sdl2-gfx",
+            "platform": "!wasm32"
         }
     ]
 }

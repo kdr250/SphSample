@@ -1,9 +1,13 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL2_gfxPrimitives.h>
 
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
     #include <emscripten/html5.h>
 #endif
+
+static constexpr int WINDOW_WIDTH  = 1024;
+static constexpr int WINDOW_HEIGHT = 768;
 
 SDL_Window* window     = nullptr;
 SDL_Renderer* renderer = nullptr;
@@ -23,8 +27,8 @@ int main()
     window = SDL_CreateWindow("SphSample",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
-                              1024,
-                              768,
+                              WINDOW_WIDTH,
+                              WINDOW_HEIGHT,
                               0);
     if (!window)
     {
@@ -70,8 +74,9 @@ int main()
             isRunning = false;
         }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+        filledCircleRGBA(renderer, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 100, 0, 0, 255, 255);
         SDL_RenderPresent(renderer);
     };
 
