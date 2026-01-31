@@ -13,15 +13,27 @@ SDL_Window* window     = nullptr;
 SDL_Renderer* renderer = nullptr;
 bool isRunning         = true;
 
+// SDL
+void InitSDL();
+void Render();
 void Shutdown();
 
-int main(int argc, char* argv[])
+// Solver
+void InitSPH();
+void Integrate();
+void ComputeDensityPressure();
+void Update();
+
+// Interactivity
+void Keyboard(SDL_Scancode code);
+
+void InitSDL()
 {
     int sdlResult = SDL_Init(SDL_INIT_VIDEO);
     if (sdlResult != 0)
     {
         SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
-        return 1;
+        exit(1);
     }
 
     window = SDL_CreateWindow("SphSample",
@@ -33,15 +45,34 @@ int main(int argc, char* argv[])
     if (!window)
     {
         SDL_Log("Failed to create window: %s", SDL_GetError());
-        return 1;
+        exit(1);
     }
 
     renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer)
     {
         SDL_Log("Failed to create renderer: %s", SDL_GetError());
-        return 1;
+        exit(1);
     }
+}
+
+void Render()
+{
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    filledCircleRGBA(renderer, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 100, 0, 0, 255, 255);
+    SDL_RenderPresent(renderer);
+}
+
+void Shutdown()
+{
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+}
+
+int main(int argc, char* argv[])
+{
+    InitSDL();
 
     auto mainLoop = []()
     {
@@ -74,10 +105,7 @@ int main(int argc, char* argv[])
             isRunning = false;
         }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-        filledCircleRGBA(renderer, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 100, 0, 0, 255, 255);
-        SDL_RenderPresent(renderer);
+        Render();
     };
 
 #ifdef __EMSCRIPTEN__
@@ -91,10 +119,4 @@ int main(int argc, char* argv[])
 #endif
 
     return 0;
-}
-
-void Shutdown()
-{
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
 }
