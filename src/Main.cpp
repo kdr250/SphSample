@@ -6,6 +6,7 @@
 #include <eigen3/Eigen/Dense>
 using namespace Eigen;
 
+#include <vector>
 #include <iostream>
 
 #ifdef __EMSCRIPTEN__
@@ -53,6 +54,9 @@ struct Particle
     Vector2d x, v, f;
     float rho, p;
 };
+
+// solver data
+static std::vector<Particle> particles;
 
 // interaction
 static constexpr int MAX_PARTICLES   = 2500;
@@ -119,6 +123,20 @@ void Shutdown()
 
 void InitSPH()
 {
+    std::cout << "initializing dam break with " << DAM_PARTICLES << " particles" << std::endl;
+
+    for (float y = EPS; y < VIEW_HEIGHT - EPS * 2.0f; y += H)
+    {
+        for (float x = VIEW_WIDTH / 4; x <= VIEW_WIDTH / 2; x += H)
+        {
+            if (particles.size() >= DAM_PARTICLES)
+            {
+                return;
+            }
+            float jitter = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+            particles.push_back(Particle(x + jitter, y));
+        }
+    }
 }
 
 void Integrate() {}
