@@ -1,21 +1,51 @@
+#define _USE_MATH_DEFINES
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <eigen3/Eigen/Dense>
 using namespace Eigen;
 
+#include <iostream>
+
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
     #include <emscripten/html5.h>
 #endif
 
-static constexpr int WINDOW_WIDTH  = 1024;
-static constexpr int WINDOW_HEIGHT = 768;
+static constexpr int WINDOW_WIDTH   = 800;
+static constexpr int WINDOW_HEIGHT  = 600;
+static constexpr double VIEW_WIDTH  = 1.5 * 800.0f;
+static constexpr double VIEW_HEIGHT = 1.5 * 600.0f;
 
 SDL_Window* window     = nullptr;
 SDL_Renderer* renderer = nullptr;
 bool isRunning         = true;
 
+// solver parameters
+static const Vector2d G(0.0f, -10.0f);       // external (gravitational) forces
+static constexpr float REST_DENS = 300.0f;   // rest density
+static constexpr float GAS_CONST = 2000.0f;  // const for equation of state
+static constexpr float H         = 16.0f;    // kernel radius
+static constexpr float HSQ       = H * H;    // radius^2 for optimization
+static constexpr float MASS      = 2.5f;     // assume all particles have the same mass
+static constexpr float VISC      = 200.0f;   // viscosity constant
+static constexpr float DT        = 0.0007f;  // integration timestep
+
+// smoothing kernels defined in Müller and their gradients
+const static float POLY6      = 4.f / (M_PI * std::pow(H, 8.f));
+const static float SPIKY_GRAD = -10.f / (M_PI * std::pow(H, 5.f));
+const static float VISC_LAP   = 40.f / (M_PI * std::pow(H, 5.f));
+
+// simulation parameters
+static constexpr float EPS           = H;  // boundary epsilon
+static constexpr float BOUND_DAMPING = -0.5f;
+
+/**
+ * particle data structure
+ * stores position, velocity, and force for integration
+ * stores density(rho) and pressure values for SPH
+ */
 struct Particle
 {
     Particle(float _x, float _y) : x(_x, _y), v(0.0f, 0.0f), f(0.0f, 0.0f), rho(0.0f), p(0.0f) {};
@@ -23,6 +53,11 @@ struct Particle
     Vector2d x, v, f;
     float rho, p;
 };
+
+// interaction
+static constexpr int MAX_PARTICLES   = 2500;
+static constexpr int DAM_PARTICLES   = 500;
+static constexpr int BLOCK_PARTICLES = 250;
 
 // SDL
 void InitSDL();
@@ -81,6 +116,16 @@ void Shutdown()
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 }
+
+void InitSPH()
+{
+}
+
+void Integrate() {}
+
+void ComputeDensityPressure() {}
+
+void ComputeForces() {}
 
 void Update()
 {
