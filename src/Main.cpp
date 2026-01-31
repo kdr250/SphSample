@@ -1,6 +1,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <eigen3/Eigen/Dense>
+using namespace Eigen;
+
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
     #include <emscripten/html5.h>
@@ -12,6 +15,14 @@ static constexpr int WINDOW_HEIGHT = 768;
 SDL_Window* window     = nullptr;
 SDL_Renderer* renderer = nullptr;
 bool isRunning         = true;
+
+struct Particle
+{
+    Particle(float _x, float _y) : x(_x, _y), v(0.0f, 0.0f), f(0.0f, 0.0f), rho(0.0f), p(0.0f) {};
+
+    Vector2d x, v, f;
+    float rho, p;
+};
 
 // SDL
 void InitSDL();
