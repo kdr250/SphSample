@@ -22,6 +22,7 @@ void Shutdown();
 void InitSPH();
 void Integrate();
 void ComputeDensityPressure();
+void ComputeForces();
 void Update();
 
 // Interactivity
@@ -68,6 +69,13 @@ void Shutdown()
 {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+}
+
+void Update()
+{
+    ComputeDensityPressure();
+    ComputeForces();
+    Integrate();
 }
 
 int main(int argc, char* argv[])
