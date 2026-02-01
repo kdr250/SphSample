@@ -151,7 +151,25 @@ void InitSPH()
 
 void Integrate() {}
 
-void ComputeDensityPressure() {}
+void ComputeDensityPressure()
+{
+    for (auto& pi : particles)
+    {
+        pi.rho = 0.0f;
+        for (auto& pj : particles)
+        {
+            Vector2d rij = pj.x - pi.x;
+            float r2     = rij.squaredNorm();
+
+            if (r2 < HSQ)
+            {
+                // this computation is symmetric
+                pi.rho += MASS * POLY6 * std::pow(HSQ - r2, 3.0f);
+            }
+        }
+        pi.p = GAS_CONST * (pi.rho - REST_DENS);
+    }
+}
 
 void ComputeForces() {}
 
@@ -198,6 +216,7 @@ int main(int argc, char* argv[])
             isRunning = false;
         }
 
+        Update();
         Render();
     };
 
