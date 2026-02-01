@@ -62,6 +62,11 @@ struct Particle
 // solver data
 static std::vector<Particle> particles;
 
+// Cells
+static const uint32_t CELL_NX = (uint32_t)std::ceil(VIEW_WIDTH / H);
+static const uint32_t CELL_NY = (uint32_t)std::ceil(VIEW_HEIGHT / H);
+static std::vector<std::vector<uint32_t>> cells;
+
 // interaction
 static constexpr int MAX_PARTICLES   = 2500;
 static constexpr int DAM_PARTICLES   = 500;
@@ -78,6 +83,11 @@ void Integrate();
 void ComputeDensityPressure();
 void ComputeForces();
 void Update();
+
+// Cells
+void BuildCells();
+uint32_t CellPositionToId(uint32_t ix, uint32_t iy);
+std::vector<uint32_t> Neighbors(Particle& particle);
 
 // Interactivity
 void Keyboard(SDL_Scancode code);
@@ -190,8 +200,9 @@ void ComputeDensityPressure()
     for (auto& pi : particles)
     {
         pi.density = 0.0f;
-        for (auto& pj : particles)
+        for (uint32_t neighborId : Neighbors(pi))
         {
+            auto& pj     = particles[neighborId];
             Vector2d rij = pj.position - pi.position;
             float r2     = rij.squaredNorm();
 
@@ -212,8 +223,9 @@ void ComputeForces()
         Vector2d fpress(0.0f, 0.0f);
         Vector2d fvisc(0.0f, 0.0f);
 
-        for (auto& pj : particles)
+        for (uint32_t neighborId : Neighbors(pi))
         {
+            auto& pj = particles[neighborId];
             if (&pi == &pj)
             {
                 continue;
@@ -239,9 +251,53 @@ void ComputeForces()
 
 void Update()
 {
+    BuildCells();
     ComputeDensityPressure();
     ComputeForces();
     Integrate();
+}
+
+void BuildCells()
+{
+    cells.clear();
+    cells.resize(CELL_NX * CELL_NY);
+
+    for (uint32_t i = 0; i < particles.size(); ++i)
+    {
+        auto& particle  = particles[i];
+        uint32_t ix     = (uint32_t)(particle.position(0) / H);
+        uint32_t iy     = (uint32_t)(particle.position(1) / H);
+        uint32_t cellId = CellPositionToId(ix, iy);
+        cells[cellId].push_back(i);
+    }
+}
+
+uint32_t CellPositionToId(uint32_t ix, uint32_t iy)
+{
+    return CELL_NX * iy + ix;
+}
+
+std::vector<uint32_t> Neighbors(Particle& particle)
+{
+    uint32_t ix = (uint32_t)(particle.position(0) / H);
+    uint32_t iy = (uint32_t)(particle.position(1) / H);
+
+    std::vector<uint32_t> result;
+    for (auto dx : {-1, 0, 1})
+    {
+        for (auto dy : {-1, 0, 1})
+        {
+            uint32_t jx = ix + dx;
+            uint32_t jy = iy + dy;
+            if (jx >= 0 && jx < CELL_NX && jy >= 0 && jy < CELL_NY)
+            {
+                uint32_t neighborId                    = CellPositionToId(jx, jy);
+                std::vector<uint32_t>& neighborsInCell = cells[neighborId];
+                result.insert(result.end(), neighborsInCell.begin(), neighborsInCell.end());
+            }
+        }
+    }
+    return result;
 }
 
 int main(int argc, char* argv[])
