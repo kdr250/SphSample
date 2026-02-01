@@ -16,15 +16,15 @@ using namespace Eigen;
 
 static constexpr int WINDOW_WIDTH   = 800;
 static constexpr int WINDOW_HEIGHT  = 600;
-static constexpr double VIEW_WIDTH  = 1.5 * 800.0f;
-static constexpr double VIEW_HEIGHT = 1.5 * 600.0f;
+static constexpr double VIEW_WIDTH  = 1.0 * 800.0f;
+static constexpr double VIEW_HEIGHT = 1.0 * 600.0f;
 
 SDL_Window* window     = nullptr;
 SDL_Renderer* renderer = nullptr;
 bool isRunning         = true;
 
 // solver parameters
-static const Vector2d G(0.0f, -10.0f);       // external (gravitational) forces
+static const Vector2d G(0.0f, 10.0f);        // external (gravitational) forces
 static constexpr float REST_DENS = 300.0f;   // rest density
 static constexpr float GAS_CONST = 2000.0f;  // const for equation of state
 static constexpr float H         = 16.0f;    // kernel radius
@@ -149,7 +149,37 @@ void InitSPH()
     }
 }
 
-void Integrate() {}
+void Integrate()
+{
+    for (auto& particle : particles)
+    {
+        // forward Euler integration
+        particle.v += DT * particle.f / particle.rho;
+        particle.x += DT * particle.v;
+
+        // enforce boundary conditions
+        if (particle.x(0) - EPS < 0.0f)
+        {
+            particle.v(0) *= BOUND_DAMPING;
+            particle.x(0) = EPS;
+        }
+        if (particle.x(0) + EPS > VIEW_WIDTH)
+        {
+            particle.v(0) *= BOUND_DAMPING;
+            particle.x(0) = VIEW_WIDTH - EPS;
+        }
+        if (particle.x(1) - EPS < 0.0f)
+        {
+            particle.v(1) *= BOUND_DAMPING;
+            particle.x(1) = EPS;
+        }
+        if (particle.x(1) + EPS > VIEW_HEIGHT)
+        {
+            particle.v(1) *= BOUND_DAMPING;
+            particle.x(1) = VIEW_HEIGHT - EPS;
+        }
+    }
+}
 
 void ComputeDensityPressure()
 {
