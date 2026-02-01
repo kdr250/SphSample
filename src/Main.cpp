@@ -109,9 +109,19 @@ void InitSDL()
 
 void Render()
 {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
-    filledCircleRGBA(renderer, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 100, 0, 0, 255, 255);
+    for (auto& particle : particles)
+    {
+        filledCircleRGBA(renderer,
+                         particle.x[0],
+                         particle.x[1],
+                         H / 2,
+                         0.2f * 255,
+                         0.6f * 255,
+                         255,
+                         255);
+    }
     SDL_RenderPresent(renderer);
 }
 
@@ -155,6 +165,7 @@ void Update()
 int main(int argc, char* argv[])
 {
     InitSDL();
+    InitSPH();
 
     auto mainLoop = []()
     {
