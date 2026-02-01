@@ -49,10 +49,14 @@ static constexpr float BOUND_DAMPING = -0.5f;
  */
 struct Particle
 {
-    Particle(float _x, float _y) : x(_x, _y), v(0.0f, 0.0f), f(0.0f, 0.0f), rho(0.0f), p(0.0f) {};
+    Particle(float x, float y) :
+        position(x, y), velocity(0.0f, 0.0f), force(0.0f, 0.0f), density(0.0f), pressure(0.0f) {};
 
-    Vector2d x, v, f;
-    float rho, p;
+    Vector2d position;
+    Vector2d velocity;
+    Vector2d force;
+    float density;
+    float pressure;
 };
 
 // solver data
@@ -114,8 +118,8 @@ void Render()
     for (auto& particle : particles)
     {
         filledCircleRGBA(renderer,
-                         particle.x[0],
-                         particle.x[1],
+                         particle.position[0],
+                         particle.position[1],
                          H / 2,
                          0.2f * 255,
                          0.6f * 255,
@@ -154,29 +158,29 @@ void Integrate()
     for (auto& particle : particles)
     {
         // forward Euler integration
-        particle.v += DT * particle.f / particle.rho;
-        particle.x += DT * particle.v;
+        particle.velocity += DT * particle.force / particle.density;
+        particle.position += DT * particle.velocity;
 
         // enforce boundary conditions
-        if (particle.x(0) - EPS < 0.0f)
+        if (particle.position(0) - EPS < 0.0f)
         {
-            particle.v(0) *= BOUND_DAMPING;
-            particle.x(0) = EPS;
+            particle.velocity(0) *= BOUND_DAMPING;
+            particle.position(0) = EPS;
         }
-        if (particle.x(0) + EPS > VIEW_WIDTH)
+        if (particle.position(0) + EPS > VIEW_WIDTH)
         {
-            particle.v(0) *= BOUND_DAMPING;
-            particle.x(0) = VIEW_WIDTH - EPS;
+            particle.velocity(0) *= BOUND_DAMPING;
+            particle.position(0) = VIEW_WIDTH - EPS;
         }
-        if (particle.x(1) - EPS < 0.0f)
+        if (particle.position(1) - EPS < 0.0f)
         {
-            particle.v(1) *= BOUND_DAMPING;
-            particle.x(1) = EPS;
+            particle.velocity(1) *= BOUND_DAMPING;
+            particle.position(1) = EPS;
         }
-        if (particle.x(1) + EPS > VIEW_HEIGHT)
+        if (particle.position(1) + EPS > VIEW_HEIGHT)
         {
-            particle.v(1) *= BOUND_DAMPING;
-            particle.x(1) = VIEW_HEIGHT - EPS;
+            particle.velocity(1) *= BOUND_DAMPING;
+            particle.position(1) = VIEW_HEIGHT - EPS;
         }
     }
 }
@@ -185,19 +189,19 @@ void ComputeDensityPressure()
 {
     for (auto& pi : particles)
     {
-        pi.rho = 0.0f;
+        pi.density = 0.0f;
         for (auto& pj : particles)
         {
-            Vector2d rij = pj.x - pi.x;
+            Vector2d rij = pj.position - pi.position;
             float r2     = rij.squaredNorm();
 
             if (r2 < HSQ)
             {
                 // this computation is symmetric
-                pi.rho += MASS * POLY6 * std::pow(HSQ - r2, 3.0f);
+                pi.density += MASS * POLY6 * std::pow(HSQ - r2, 3.0f);
             }
         }
-        pi.p = GAS_CONST * (pi.rho - REST_DENS);
+        pi.pressure = GAS_CONST * (pi.density - REST_DENS);
     }
 }
 
@@ -215,20 +219,21 @@ void ComputeForces()
                 continue;
             }
 
-            Vector2d rij = pj.x - pi.x;
+            Vector2d rij = pj.position - pi.position;
             float r      = rij.norm();
 
             if (r < H)
             {
                 // compute pressure force contribution
-                fpress += -rij.normalized() * MASS * (pi.p + pj.p) / (2.0f * pj.rho) * SPIKY_GRAD
-                          * std::pow(H - r, 3.0f);
+                fpress += -rij.normalized() * MASS * (pi.pressure + pj.pressure)
+                          / (2.0f * pj.density) * SPIKY_GRAD * std::pow(H - r, 3.0f);
                 // compute viscosity force contribution
-                fvisc += VISC * MASS * (pj.v - pi.v) / pj.rho * VISC_LAP * (H - r);
+                fvisc +=
+                    VISC * MASS * (pj.velocity - pi.velocity) / pj.density * VISC_LAP * (H - r);
             }
         }
-        Vector2d fgrav = G * MASS / pi.rho;
-        pi.f           = fpress + fvisc + fgrav;
+        Vector2d fgrav = G * MASS / pi.density;
+        pi.force       = fpress + fvisc + fgrav;
     }
 }
 
