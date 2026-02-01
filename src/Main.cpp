@@ -171,7 +171,36 @@ void ComputeDensityPressure()
     }
 }
 
-void ComputeForces() {}
+void ComputeForces()
+{
+    for (auto& pi : particles)
+    {
+        Vector2d fpress(0.0f, 0.0f);
+        Vector2d fvisc(0.0f, 0.0f);
+
+        for (auto& pj : particles)
+        {
+            if (&pi == &pj)
+            {
+                continue;
+            }
+
+            Vector2d rij = pj.x - pi.x;
+            float r      = rij.norm();
+
+            if (r < H)
+            {
+                // compute pressure force contribution
+                fpress += -rij.normalized() * MASS * (pi.p + pj.p) / (2.0f * pj.rho) * SPIKY_GRAD
+                          * std::pow(H - r, 3.0f);
+                // compute viscosity force contribution
+                fvisc += VISC * MASS * (pj.v - pi.v) / pj.rho * VISC_LAP * (H - r);
+            }
+        }
+        Vector2d fgrav = G * MASS / pi.rho;
+        pi.f           = fpress + fvisc + fgrav;
+    }
+}
 
 void Update()
 {
