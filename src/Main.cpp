@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 using namespace Eigen;
 
+#include <thread>
+#include <cmath>
 #include <vector>
 #include <iostream>
 
@@ -67,6 +69,10 @@ static const uint32_t CELL_NX = (uint32_t)std::ceil(VIEW_WIDTH / H);
 static const uint32_t CELL_NY = (uint32_t)std::ceil(VIEW_HEIGHT / H);
 static std::vector<std::vector<uint32_t>> cells;
 
+// Thread
+static unsigned int NUM_THREADS = 1;
+std::vector<std::thread> threads;
+
 // interaction
 static constexpr int MAX_PARTICLES   = 2500;
 static constexpr int DAM_PARTICLES   = 500;
@@ -88,6 +94,9 @@ void Update();
 void BuildCells();
 uint32_t CellPositionToId(uint32_t ix, uint32_t iy);
 std::vector<uint32_t> Neighbors(Particle& particle);
+
+// Thread
+void InitThreads();
 
 // Interactivity
 void Keyboard(SDL_Scancode code);
@@ -197,55 +206,89 @@ void Integrate()
 
 void ComputeDensityPressure()
 {
-    for (auto& pi : particles)
+    threads.clear();
+    int size = (int)std::ceil(particles.size() / (float)NUM_THREADS);
+    for (int t = 0; t < NUM_THREADS; ++t)
     {
-        pi.density = 0.0f;
-        for (uint32_t neighborId : Neighbors(pi))
-        {
-            auto& pj     = particles[neighborId];
-            Vector2d rij = pj.position - pi.position;
-            float r2     = rij.squaredNorm();
-
-            if (r2 < HSQ)
+        threads.emplace_back(
+            [size](int startIndex)
             {
-                // this computation is symmetric
-                pi.density += MASS * POLY6 * std::pow(HSQ - r2, 3.0f);
-            }
-        }
-        pi.pressure = GAS_CONST * (pi.density - REST_DENS);
+                int end = std::min(startIndex + size, (int)particles.size());
+                for (int i = startIndex; i < end; ++i)
+                {
+                    auto& pi   = particles[i];
+                    pi.density = 0.0f;
+                    for (uint32_t neighborId : Neighbors(pi))
+                    {
+                        auto& pj     = particles[neighborId];
+                        Vector2d rij = pj.position - pi.position;
+                        float r2     = rij.squaredNorm();
+
+                        if (r2 < HSQ)
+                        {
+                            // this computation is symmetric
+                            pi.density += MASS * POLY6 * std::pow(HSQ - r2, 3.0f);
+                        }
+                    }
+                    pi.pressure = GAS_CONST * (pi.density - REST_DENS);
+                }
+            },
+            t * size);
+    }
+
+    for (int t = 0; t < NUM_THREADS; ++t)
+    {
+        threads[t].join();
     }
 }
 
 void ComputeForces()
 {
-    for (auto& pi : particles)
+    threads.clear();
+    int size = (int)std::ceil(particles.size() / (float)NUM_THREADS);
+    for (int t = 0; t < NUM_THREADS; ++t)
     {
-        Vector2d fpress(0.0f, 0.0f);
-        Vector2d fvisc(0.0f, 0.0f);
-
-        for (uint32_t neighborId : Neighbors(pi))
-        {
-            auto& pj = particles[neighborId];
-            if (&pi == &pj)
+        threads.emplace_back(
+            [size](int startIndex)
             {
-                continue;
-            }
+                int end = std::min(startIndex + size, (int)particles.size());
+                for (int i = startIndex; i < end; ++i)
+                {
+                    auto& pi = particles[i];
+                    Vector2d fpress(0.0f, 0.0f);
+                    Vector2d fvisc(0.0f, 0.0f);
 
-            Vector2d rij = pj.position - pi.position;
-            float r      = rij.norm();
+                    for (uint32_t neighborId : Neighbors(pi))
+                    {
+                        auto& pj = particles[neighborId];
+                        if (&pi == &pj)
+                        {
+                            continue;
+                        }
 
-            if (r < H)
-            {
-                // compute pressure force contribution
-                fpress += -rij.normalized() * MASS * (pi.pressure + pj.pressure)
-                          / (2.0f * pj.density) * SPIKY_GRAD * std::pow(H - r, 3.0f);
-                // compute viscosity force contribution
-                fvisc +=
-                    VISC * MASS * (pj.velocity - pi.velocity) / pj.density * VISC_LAP * (H - r);
-            }
-        }
-        Vector2d fgrav = G * MASS / pi.density;
-        pi.force       = fpress + fvisc + fgrav;
+                        Vector2d rij = pj.position - pi.position;
+                        float r      = rij.norm();
+
+                        if (r < H)
+                        {
+                            // compute pressure force contribution
+                            fpress += -rij.normalized() * MASS * (pi.pressure + pj.pressure)
+                                      / (2.0f * pj.density) * SPIKY_GRAD * std::pow(H - r, 3.0f);
+                            // compute viscosity force contribution
+                            fvisc += VISC * MASS * (pj.velocity - pi.velocity) / pj.density
+                                     * VISC_LAP * (H - r);
+                        }
+                    }
+                    Vector2d fgrav = G * MASS / pi.density;
+                    pi.force       = fpress + fvisc + fgrav;
+                }
+            },
+            t * size);
+    }
+
+    for (int t = 0; t < NUM_THREADS; ++t)
+    {
+        threads[t].join();
     }
 }
 
@@ -300,10 +343,17 @@ std::vector<uint32_t> Neighbors(Particle& particle)
     return result;
 }
 
+void InitThreads()
+{
+    NUM_THREADS = std::thread::hardware_concurrency();
+    std::cout << "concurrency = " << NUM_THREADS << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
     InitSDL();
     InitSPH();
+    InitThreads();
 
     auto mainLoop = []()
     {

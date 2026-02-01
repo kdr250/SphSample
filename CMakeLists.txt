@@ -43,7 +43,7 @@ add_executable(
 
 if (EMSCRIPTEN)
 
-    set(USE_FLAGS "-s USE_SDL=2 -s USE_SDL_GFX=2 --preload-file resources/")
+    set(USE_FLAGS "-s USE_SDL=2 -s USE_SDL_GFX=2 -pthread -sPTHREAD_POOL_SIZE=2 -s ALLOW_MEMORY_GROWTH --preload-file resources/")
     set(CMAKE_CXX_FLAGS ${USE_FLAGS})
 
     target_link_libraries(

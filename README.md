@@ -8,7 +8,7 @@
 ### Webの場合
 1. `emcmake cmake -B build-web -G Ninja` を実行。
 2. `cmake --build build-web` を実行。
-3. `python -m http.server -d build-web` を実行してWebサーバー起動。
+3. `python server.py` を実行してWebサーバー起動。
 4. ブラウザで `http://localhost:8000/main.html` にアクセスして確認。
 
 ## 参考にしたURL
