@@ -1,5 +1,6 @@
 # SPH Sample
-『Implementing SPH in 2D』学習用レポジトリ
+『Implementing SPH in 2D』学習用レポジトリ<br>
+[Demo](https://kdr250.github.io/SphSample/)
 
 ## ビルド方法
 ### ネイティブの場合
@@ -10,6 +11,12 @@
 2. `cmake --build build-web` を実行。
 3. `python -m http.server -d build-web` を実行してWebサーバー起動。
 4. ブラウザで `http://localhost:8000` にアクセスして確認。
+
+### サブモジュール
+```
+# submoduleを取得
+git submodule update --init
+```
 
 ## 参考にしたURL
 - Schuermann, Lucas V. (Jul 2017). Implementing SPH in 2D. Writing.<br>
