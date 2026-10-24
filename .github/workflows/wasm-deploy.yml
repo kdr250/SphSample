@@ -40,6 +40,8 @@ jobs:
 
       - name: Build
         run: |
+          emcc --clear-cache &&
+          embuilder build sdl2 sdl2_gfx &&
           emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G Ninja &&
           cmake --build build-web --config ${{env.BUILD_TYPE}}
 
