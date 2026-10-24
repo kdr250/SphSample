@@ -51,8 +51,9 @@ if (EMSCRIPTEN)
         Eigen3::Eigen
     )
 
-    set_target_properties(main PROPERTIES SUFFIX ".html")
+    set_target_properties(main PROPERTIES SUFFIX ".js")
 
+    file(COPY ${PROJECT_SOURCE_DIR}/index.html DESTINATION ${CMAKE_BINARY_DIR})
     file(COPY ${PROJECT_SOURCE_DIR}/resources DESTINATION ${CMAKE_BINARY_DIR})
 
 else()
