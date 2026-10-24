@@ -1,0 +1,3 @@
+[submodule "external/coi-serviceworker"]
+	path = external/coi-serviceworker
+	url = https://github.com/gzuidhof/coi-serviceworker
