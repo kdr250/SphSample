@@ -50,7 +50,7 @@ jobs:
       - name: Output
         run: |
           mkdir public &&
-          mv build-web/main.html public/index.html &&
+          mv build-web/index.html public/index.html &&
           mv build-web/main.data public/main.data &&
           mv build-web/main.js public/main.js &&
           mv build-web/main.wasm public/main.wasm
