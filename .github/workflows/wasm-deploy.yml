@@ -52,6 +52,7 @@ jobs:
           mv build-web/main.data public/main.data &&
           mv build-web/main.js public/main.js &&
           mv build-web/main.wasm public/main.wasm
+          mv build-web/coi-serviceworker.min.js public/coi-serviceworker.min.js &&
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4

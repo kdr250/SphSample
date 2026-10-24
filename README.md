@@ -8,8 +8,8 @@
 ### Webの場合
 1. `emcmake cmake -B build-web -G Ninja` を実行。
 2. `cmake --build build-web` を実行。
-3. `python server.py` を実行してWebサーバー起動。
-4. ブラウザで `http://localhost:8000/main.html` にアクセスして確認。
+3. `python -m http.server -d build-web` を実行してWebサーバー起動。
+4. ブラウザで `http://localhost:8000` にアクセスして確認。
 
 ## 参考にしたURL
 - Schuermann, Lucas V. (Jul 2017). Implementing SPH in 2D. Writing.<br>
